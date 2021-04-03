@@ -81,47 +81,91 @@ namespace FilePairing
 
 		private ListView _sourceListView;
 
-
+		private bool _isRowMove = false;
 
 
 
 		private void MainListView_OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
 		{
 			if (!(sender is ListView sourceListView)) return;
-
-			// if image, check which image was selected -> Main or Sub
-
-
 			if (e.OriginalSource is Image image)
 			{
 				if (!(image.DataContext is PairData pd)) return;
 
-				var imageLocalPath = new Uri(image.Source.ToString()).LocalPath;
+				_sourceListView = sourceListView;
 
+				var imageLocalPath = new Uri(image.Source.ToString()).LocalPath;
 				if (pd.MainFile == imageLocalPath)
 				{
-					// drag row
+					_isRowMove = true;
+				}
+				DragDrop.DoDragDrop(sourceListView, pd, DragDropEffects.Move);
+				CleanupDragDrop();
+			}
+		}
+
+
+
+
+
+		private void MainListView_OnDrop(object sender, DragEventArgs e)
+		{
+			if (!(sender is ListView lv)) return;
+
+			if (!(e.OriginalSource is FrameworkElement targetItem)) return;
+			if (!(lv.ContainerFromElement(targetItem) is ListViewItem li)) return;
+			if (!(li.Content is PairData droppedLine)) return;
+
+			var subFileList = SubListView.ItemsSource as ObservableCollection<string>;
+
+			if (e.Data.GetDataPresent(typeof(PairData)))
+			{
+				var droppedItem = e.Data.GetData(typeof(PairData)) as PairData;
+
+				if (_isRowMove)
+				{
+					if (!(lv.ItemsSource is ObservableCollection<PairData> sourceList)) return;
+
+					var origIndex = sourceList.IndexOf(droppedLine);
+					sourceList.Remove(droppedItem);
+					var newIndex = sourceList.IndexOf(droppedLine) > origIndex ? origIndex-1 : origIndex;
+					sourceList.Insert(newIndex, droppedItem);
 				}
 				else
 				{
-					// drag subimage
+					if (!string.IsNullOrEmpty(droppedLine.SubFile))
+					{
+						subFileList.Add(droppedLine.SubFile);
+					}
+					droppedLine.SubFile = droppedItem.SubFile;
+					droppedItem.SubFile = string.Empty;
 				}
-
-
-
-				DragDrop.DoDragDrop(sourceListView, image, DragDropEffects.Move);
 			}
-			else if (e.OriginalSource is ListViewItem li)
+			else if (e.Data.GetDataPresent(DataFormats.Text))
 			{
+				var droppedFilename = e.Data.GetData(DataFormats.Text) as string;
 
-				//
+				if (!string.IsNullOrEmpty(droppedLine.SubFile))
+				{
+					subFileList.Add(droppedLine.SubFile);
+				}
+				subFileList.Remove(droppedFilename);
+				droppedLine.SubFile = droppedFilename;
 			}
-			else
-			{
-				return;
-			}
+			lv.SelectedItem = droppedLine;
+		}
 
-			_sourceListView = sourceListView;
+
+
+
+
+
+
+		private void CleanupDragDrop()
+		{
+			_sourceListView = null;
+			_isRowMove = false;
+
 		}
 
 
@@ -133,70 +177,14 @@ namespace FilePairing
 
 			_sourceListView = sourceListView;
 
-			DragDrop.DoDragDrop(sourceListView, image, DragDropEffects.Move);
+			DragDrop.DoDragDrop(sourceListView, image.DataContext, DragDropEffects.Move);
+
+			CleanupDragDrop();
 		}
 
 
 
 
-
-		private void MainListView_OnDrop(object sender, DragEventArgs e)
-		{
-			if (!(sender is ListView lv)) return;
-			if (!(lv.ItemsSource is IList sourceList)) return;
-
-			if (!(e.Data.GetData(typeof(Image)) is Image im)) return;
-			
-
-			if (!(e.OriginalSource is FrameworkElement targetItem)) return;
-			if (!(lv.ContainerFromElement(targetItem) is ListViewItem li)) return;
-
-			if (!(li.Content is PairData currentLine)) return;
-			
-			if (!(im.DataContext is string filename)) return;
-
-			if (_sourceListView.ItemsSource is ObservableCollection<PairData> originPartDataCollection)
-			{
-				var currentData = originPartDataCollection.FirstOrDefault(i => i.SubFile == filename);
-				if (currentData != null)
-				{
-					currentData.SubFile = string.Empty;
-				}
-			}
-			else if (_sourceListView.ItemsSource is ObservableCollection<string> originFilenameCollection)
-			{
-				if (!string.IsNullOrEmpty(currentLine.SubFile))
-				{
-					originFilenameCollection.Add(currentLine.SubFile);
-				}
-				originFilenameCollection.Remove(filename);
-			}
-
-			currentLine.SubFile = filename;
-			lv.SelectedItem = currentLine;
-
-			_sourceListView = null;
-		}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-		private void MainListView_OnPreviewDragOver(object sender, DragEventArgs e)
-		{
-			e.Effects = e.Data.GetDataPresent(DataFormats.FileDrop, true) ? DragDropEffects.Copy : DragDropEffects.None;
-			e.Handled = true;
-		}
 
 		
 
@@ -217,12 +205,6 @@ namespace FilePairing
 
 			//var source = e.Source;
 		}
-
-
-
-
-
-
 
 
 
