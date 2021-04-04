@@ -1,17 +1,22 @@
-﻿<Window x:Class="FilePairing.MainWindow"
+﻿<Window x:Class="FilePairing.FilePairingWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:FilePairing"
         mc:Ignorable="d"
-		WindowStartupLocation="CenterScreen"
+        d:DataContext="{d:DesignInstance local:MainViewModel}"
+		WindowStartupLocation="CenterOwner"
 		Loaded="MainWindow_OnLoaded"
 		ContentRendered="MainWindow_OnContentRendered"
         Title="ファイル・ペアリング - バージョン 1.0" Height="900" Width="1400">
 	<Window.DataContext>
 		<local:MainViewModel />
 	</Window.DataContext>
+	<Window.Resources>
+		<local:ColumnWidthConverter x:Key="ColumnWidthConverter" />
+		<local:MainListViewWidthConverter x:Key="MainListViewWidthConverter" />
+	</Window.Resources>
 
 	<Grid Margin="2">
 		<Grid.ColumnDefinitions>
