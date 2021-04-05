@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -7,19 +6,11 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Interactivity;
-using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
-using Path = System.IO.Path;
 
 namespace FilePairing
 {
@@ -49,15 +40,15 @@ namespace FilePairing
 
 
 
-
 		// Drag&Drop control objects.
 		private ListView _sourceListView;
 
 
 		/// <summary>
 		/// Drag mode - Row move (MainFile is selected or not)
+		/// default is false
 		/// </summary>
-		private bool _isRowMove = false;
+		private bool _isRowMove;
 
 
 
@@ -123,20 +114,18 @@ namespace FilePairing
 		private void MainListView_OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
 		{
 			if (!(sender is ListView sourceListView)) return;
-			if (e.OriginalSource is Image image)
+			if (!(e.OriginalSource is Image image)) return;
+			if (!(image.DataContext is PairData pd)) return;
+
+			_sourceListView = sourceListView;
+
+			var imageLocalPath = ControlAttachedProperty.GetFilename(image);
+			if (pd.MainFile == imageLocalPath)
 			{
-				if (!(image.DataContext is PairData pd)) return;
-
-				_sourceListView = sourceListView;
-
-				var imageLocalPath = new Uri(image.Source.ToString()).LocalPath;
-				if (pd.MainFile == imageLocalPath)
-				{
-					_isRowMove = true;
-				}
-				DragDrop.DoDragDrop(sourceListView, pd, DragDropEffects.Move);
-				CleanupDragDrop();
+				_isRowMove = true;
 			}
+			DragDrop.DoDragDrop(sourceListView, pd, DragDropEffects.Move);
+			CleanupDragDrop();
 		}
 
 
@@ -152,8 +141,9 @@ namespace FilePairing
 			if (!(e.OriginalSource is FrameworkElement targetItem)) return;
 			if (!(lv.ContainerFromElement(targetItem) is ListViewItem li)) return;
 			if (!(li.Content is PairData droppedLine)) return;
+			if (!(lv.ItemsSource is ObservableCollection<PairData> sourceList)) return;
 
-			var subFileList = SubListView.ItemsSource as ObservableCollection<string>;
+			if (!(SubListView.ItemsSource is ObservableCollection<string> subFileList)) return;
 
 			if (e.Data.GetDataPresent(typeof(PairData)))
 			{
@@ -161,8 +151,6 @@ namespace FilePairing
 
 				if (_isRowMove)
 				{
-					if (!(lv.ItemsSource is ObservableCollection<PairData> sourceList)) return;
-
 					var origIndex = sourceList.IndexOf(droppedLine);
 					sourceList.Remove(droppedItem);
 					var newIndex = sourceList.IndexOf(droppedLine) > origIndex ? origIndex-1 : origIndex;
@@ -174,8 +162,12 @@ namespace FilePairing
 					{
 						subFileList.Add(droppedLine.SubFile);
 					}
-					droppedLine.SubFile = droppedItem.SubFile;
-					droppedItem.SubFile = string.Empty;
+
+					if (droppedItem != null)
+					{
+						droppedLine.SubFile = droppedItem.SubFile;
+						droppedItem.SubFile = string.Empty;
+					}
 				}
 			}
 			else if (e.Data.GetDataPresent(DataFormats.Text))
@@ -189,6 +181,7 @@ namespace FilePairing
 				subFileList.Remove(droppedFilename);
 				droppedLine.SubFile = droppedFilename;
 			}
+			
 			lv.SelectedItem = droppedLine;
 		}
 
@@ -225,12 +218,9 @@ namespace FilePairing
 			if (!(sender is ListView lv)) return;
 			if (!(lv.ItemsSource is ObservableCollection<string> sourceList)) return;
 
-			if (e.Data.GetDataPresent(typeof(PairData)))
-			{
-				var pairData = e.Data.GetData(typeof(PairData)) as PairData;
-				sourceList.Add(pairData.SubFile);
-				pairData.SubFile = string.Empty;
-			}
+			if (!(e.Data.GetData(typeof(PairData)) is PairData pairData)) return;
+			sourceList.Add(pairData.SubFile);
+			pairData.SubFile = string.Empty;
 		}
 
 
@@ -253,30 +243,32 @@ namespace FilePairing
 		/// <param name="e"></param>
 		private void CompButton_Click(object sender, RoutedEventArgs e)
 		{
-
-			var win = new FilenameInputWindow
-			{
-				Owner = this
-			};
-
-			if (win.ShowDialog() != true) return;
-
-			// RenameFiles(win.ViewModel.MainFilename, win.ViewModel.SubFilename);
+			DialogResult = true;
+			Close();
 		}
+	}
 
 
 
-
-		private void ClearImages()
+	public class ImageConverter : IValueConverter
+	{
+		public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
 		{
-			MainListView.ItemsSource = null;
-			SubListView.ItemsSource = null;
+			if (!(value is string filename)) return string.Empty;
+			if (string.IsNullOrEmpty(filename)) return string.Empty;
+
+			using (var fs = new FileStream(filename, FileMode.Open, FileAccess.Read))
+			{
+				var decoder = BitmapDecoder.Create(fs, BitmapCreateOptions.None, BitmapCacheOption.OnLoad);
+
+				return decoder.Frames[0];
+			}
 		}
 
-
-
-
-
+		public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+		{
+			throw new NotImplementedException();
+		}
 	}
 
 
@@ -319,6 +311,25 @@ namespace FilePairing
 		}
 	}
 
+
+	/// <summary>
+	/// 添付プロパティ
+	/// </summary>
+	public class ControlAttachedProperty
+	{
+		public static readonly DependencyProperty RemarkProperty
+			= DependencyProperty.RegisterAttached(
+				"Filename",
+				typeof(string),
+				typeof(ControlAttachedProperty),
+				new FrameworkPropertyMetadata(string.Empty));
+
+		public static string GetFilename(DependencyObject target)
+			=> (string)target.GetValue(RemarkProperty);
+
+		public static void SetFilename(DependencyObject target, string value)
+			=> target.SetValue(RemarkProperty, value);
+	}
 
 
 	/// <summary>
@@ -379,10 +390,15 @@ namespace FilePairing
 		private void RaisePropertyChanged([CallerMemberName] string propertyName = null)
 			=> PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 
+		private string _mainFile;
 		public string MainFile
 		{
-			get;
-			set;
+			get => _mainFile;
+			set
+			{
+				_mainFile = value;
+				RaisePropertyChanged();
+			}
 		}
 
 		private string _subFile;

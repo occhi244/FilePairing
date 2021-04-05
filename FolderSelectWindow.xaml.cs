@@ -1,19 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
-using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
+using MSAPI = Microsoft.WindowsAPICodePack;
 
 namespace FilePairing
 {
@@ -22,6 +13,9 @@ namespace FilePairing
 	/// </summary>
 	public partial class FolderSelectWindow : Window
 	{
+		/// <summary>
+		/// フォルダ ビューモデル
+		/// </summary>
 		public FolderViewModel ViewModel
 		{
 			get;
@@ -29,7 +23,9 @@ namespace FilePairing
 		}
 
 
-
+		/// <summary>
+		/// コンストラクタ
+		/// </summary>
 		public FolderSelectWindow()
 		{
 			InitializeComponent();
@@ -40,6 +36,11 @@ namespace FilePairing
 
 
 
+		/// <summary>
+		/// OKボタン処理
+		/// </summary>
+		/// <param name="sender"></param>
+		/// <param name="e"></param>
 		private void OKButton_OnClick(object sender, RoutedEventArgs e)
 		{
 			if (string.IsNullOrEmpty(ViewModel.MainFolderName))
@@ -66,8 +67,11 @@ namespace FilePairing
 
 
 
-
-
+		/// <summary>
+		/// フォルダのドロップ
+		/// </summary>
+		/// <param name="sender"></param>
+		/// <param name="e"></param>
 		private void MainFolderGroup_OnDrop(object sender, DragEventArgs e)
 		{
 			if (!GetFolderPath(e, out var folderName)) return;
@@ -75,6 +79,12 @@ namespace FilePairing
 			ViewModel.MainFolderName = folderName;
 		}
 
+
+		/// <summary>
+		/// フォルダのドロップ
+		/// </summary>
+		/// <param name="sender"></param>
+		/// <param name="e"></param>
 		private void SubFolderGroup_OnDrop(object sender, DragEventArgs e)
 		{
 			if (!GetFolderPath(e, out var folderName)) return;
@@ -83,7 +93,11 @@ namespace FilePairing
 		}
 
 
-
+		/// <summary>
+		/// ドラッグ・オーバー処理
+		/// </summary>
+		/// <param name="sender"></param>
+		/// <param name="e"></param>
 		private void FolderGroup_OnPreviewDragOver(object sender, DragEventArgs e)
 		{
 			e.Effects = GetFolderPath(e, out _) ? DragDropEffects.Copy : DragDropEffects.None;
@@ -91,6 +105,12 @@ namespace FilePairing
 		}
 
 
+		/// <summary>
+		/// フォルダを得る
+		/// </summary>
+		/// <param name="e"></param>
+		/// <param name="folderName"></param>
+		/// <returns></returns>
 		private static bool GetFolderPath(DragEventArgs e, out string folderName)
 		{
 			if (e.Data.GetData(DataFormats.FileDrop) is string[] files)
@@ -101,6 +121,37 @@ namespace FilePairing
 
 			folderName = string.Empty;
 			return false;
+		}
+
+
+		/// <summary>
+		/// フォルダの選択
+		/// </summary>
+		/// <param name="sender"></param>
+		/// <param name="e"></param>
+		private void FolderSelectButton_OnClick(object sender, RoutedEventArgs e)
+		{
+			if (!(sender is Button senderButton)) return;
+
+			var typeName = senderButton.Name == "MainSelectButton" ? "メイン" : "サブ";
+
+			var dialog = new MSAPI::Dialogs.CommonOpenFileDialog
+			{
+				IsFolderPicker = true,
+				Title = $"{typeName}・フォルダを選択してください",
+				InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory)
+			};
+			if (dialog.ShowDialog() != MSAPI::Dialogs.CommonFileDialogResult.Ok) return;
+
+			switch (senderButton.Name)
+			{
+				case "MainSelectButton":
+					ViewModel.MainFolderName = dialog.FileName;
+					break;
+				case "SubSelectButton":
+					ViewModel.SubFolderName = dialog.FileName;
+					break;
+			}
 		}
 	}
 
@@ -120,7 +171,6 @@ namespace FilePairing
 		/// <param name="propertyName"></param>
 		private void RaisePropertyChanged([CallerMemberName] string propertyName = null)
 			=> PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-
 
 
 

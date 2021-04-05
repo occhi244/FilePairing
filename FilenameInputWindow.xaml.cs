@@ -1,16 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
 
 namespace FilePairing
 {
@@ -30,6 +20,27 @@ namespace FilePairing
 
 
 		/// <summary>
+		/// 
+		/// </summary>
+		public string MainPath
+		{
+			get;
+			set;
+		}
+
+
+		/// <summary>
+		/// 
+		/// </summary>
+		public string SubPath
+		{
+			get;
+			set;
+		}
+
+
+
+		/// <summary>
 		/// コンストラクタ
 		/// </summary>
 		public FilenameInputWindow()
@@ -39,8 +50,8 @@ namespace FilePairing
 
 			ViewModel = new FilenameInputViewModel
 			{
-				MainFilename = "施工前",
-				SubFilename = "施工後"
+				MainFilename = "作業前",
+				SubFilename = "作業後"
 			};
 			DataContext = ViewModel;
 		}
@@ -53,6 +64,30 @@ namespace FilePairing
 		/// <param name="e"></param>
 		private void Button_Click(object sender, RoutedEventArgs e)
 		{
+			if (string.IsNullOrEmpty(ViewModel.MainFilename))
+			{
+				MessageBox.Show("メインファイル名がセットされていません", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+				return;
+			}
+			if (string.IsNullOrEmpty(ViewModel.SubFilename))
+			{
+				MessageBox.Show("サブファイル名がセットされていません", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+				return;
+			}
+
+			if (Directory.GetFiles(MainPath)
+				.FirstOrDefault(i => Path.GetFileName(i).StartsWith($"{ViewModel.MainFilename}-")) != null)
+			{
+				MessageBox.Show($"メインファイルのフォルダに、[{ViewModel.MainFilename}]で始まるファイルが既に存在しています", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+				return;
+			}
+			if (Directory.GetFiles(SubPath)
+				.FirstOrDefault(i => Path.GetFileName(i).StartsWith($"{ViewModel.SubFilename}-")) != null)
+			{
+				MessageBox.Show($"サブファイルのフォルダに、[{ViewModel.SubFilename}]で始まるファイルが既に存在しています", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+				return;
+			}
+
 			DialogResult = true;
 			Close();
 		}

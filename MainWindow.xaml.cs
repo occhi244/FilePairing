@@ -1,24 +1,7 @@
 ﻿using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.Globalization;
 using System.IO;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Interactivity;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 using Path = System.IO.Path;
 
 namespace FilePairing
@@ -28,62 +11,98 @@ namespace FilePairing
 	/// </summary>
 	public partial class MainWindow : Window
 	{
-		public MainViewModel ViewModel
-		{
-			get;
-			set;
-		}
-
-
-
-
-
-
-
 		/// <summary>
 		/// コンストラクタ
 		/// </summary>
 		public MainWindow()
 		{
 			InitializeComponent();
-
-		//	ViewModel = new MainViewModel();
 		}
 
 
+		/// <summary>
+		/// メイン処理
+		/// </summary>
+		private void MainWindow_OnContentRendered(object sender, EventArgs e)
+		{
+			// Input folders
+			var folderWindow = new FolderSelectWindow
+			{
+				Owner = this
+			};
+			if (folderWindow.ShowDialog() != true)
+			{
+				Close();
+				return;
+			}
+
+			// Pairing
+			var pairingWindow = new FilePairingWindow
+			{
+				Owner = this,
+				MainPath = folderWindow.ViewModel.MainFolderName,
+				SubPath = folderWindow.ViewModel.SubFolderName
+			};
+			if (pairingWindow.ShowDialog() != true)
+			{
+				Close();
+				return;
+			}
+			GC.Collect();
+
+			// Set filenames
+			var filenameWindow = new FilenameInputWindow
+			{
+				Owner = this,
+				MainPath = pairingWindow.MainPath,
+				SubPath = pairingWindow.SubPath
+			};
+			if (filenameWindow.ShowDialog() != true)
+			{
+				Close();
+				return;
+			}
+
+			RenameFiles(filenameWindow.ViewModel.MainFilename, filenameWindow.ViewModel.SubFilename, pairingWindow.ViewModel.MainViewFiles);
+			Close();
+		}
 
 
-
-
-
-
-
-		private void RenameFiles(string mainFilename, string subFilename)
+		/// <summary>
+		/// ファイル名変更
+		/// </summary>
+		/// <param name="mainFilename">メイン・ベースファイル名</param>
+		/// <param name="subFilename">サブ・ベースファイル名</param>
+		/// <param name="pairDataList">ペアデータのリスト</param>
+		private static void RenameFiles(string mainFilename, string subFilename, Collection<PairData> pairDataList)
 		{
 			var count = 0;
-			var digit = ViewModel.MainViewFiles.Count.ToString().Length;
+			var digit = pairDataList.Count.ToString().Length;
 
-			foreach (var pairData in ViewModel.MainViewFiles)
+			foreach (var pairData in pairDataList)
 			{
-				if (!string.IsNullOrEmpty(pairData.SubFile))
-				{
-					var suffix = $"{++count}".PadLeft(digit, '0');
+				if (string.IsNullOrEmpty(pairData.SubFile)) continue;
 
-					Rename(pairData.MainFile, mainFilename, suffix);
-					Rename(pairData.SubFile, subFilename, suffix);
-				}
+				var suffix = $"{++count}".PadLeft(digit, '0');
+
+				Rename(pairData.MainFile, mainFilename, suffix);
+				Rename(pairData.SubFile, subFilename, suffix);
 			}
 		}
 
 
-
-		private void Rename(string source, string baseName, string count)
+		/// <summary>
+		/// ファイル名変更
+		/// </summary>
+		/// <param name="source">変更元ファイル名 (フルパス)</param>
+		/// <param name="baseName">変更先 ベース名</param>
+		/// <param name="count">シーケンス番号</param>
+		private static void Rename(string source, string baseName, string count)
 		{
+			var path = Path.GetDirectoryName(source);
 			var ext = Path.GetExtension(source);
 
-			File.Move(source, $"{baseName}{count}{ext}");
+			File.Move(source, $@"{path}\{baseName}-{count}{ext}");
 		}
-
-
 	}
 }

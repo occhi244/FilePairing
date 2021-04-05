@@ -9,16 +9,14 @@
 		WindowStartupLocation="CenterOwner"
 		Loaded="MainWindow_OnLoaded"
 		ContentRendered="MainWindow_OnContentRendered"
-        Title="ファイル・ペアリング - バージョン 1.0" Height="900" Width="1400">
-	<Window.DataContext>
-		<local:MainViewModel />
-	</Window.DataContext>
+        Title="ファイルのマッチング" Height="900" Width="1400">
 	<Window.Resources>
 		<local:ColumnWidthConverter x:Key="ColumnWidthConverter" />
 		<local:MainListViewWidthConverter x:Key="MainListViewWidthConverter" />
+		<local:ImageConverter x:Key="ImageConverter" />
 	</Window.Resources>
 
-	<Grid Margin="2">
+	<Grid Margin="4">
 		<Grid.ColumnDefinitions>
 			<ColumnDefinition Width="{Binding ElementName=MainViewWidthSlider, Path=Value, Converter={StaticResource MainListViewWidthConverter}}" />
 			<ColumnDefinition Width="*" />
@@ -49,7 +47,6 @@
 			        Grid.Column="2" />
 		</Grid>
 
-
 	    <ListView Name="MainListView"
 				  ItemsSource="{Binding MainViewFiles}"
 				  AllowDrop="True"
@@ -62,9 +59,9 @@
 						<GridViewColumn.CellTemplate>
 							<DataTemplate>
 								<Grid Width="{Binding ElementName=MainViewWidthSlider, Path=Value}">
-									<Image Source="{Binding MainFile}"
-										   MouseLeftButtonDown="MainListView_OnMouseLeftButtonDown"
-									       d:DataContext="{d:DesignInstance local:PairData}" />
+									<Image Source="{Binding MainFile, Converter={StaticResource ImageConverter}}"
+										   local:ControlAttachedProperty.Filename="{Binding MainFile}"
+										   d:DataContext="{d:DesignInstance local:PairData}" />
 								</Grid>
 							</DataTemplate>
 						</GridViewColumn.CellTemplate>
@@ -73,7 +70,7 @@
 						<GridViewColumn.CellTemplate>
 							<DataTemplate>
 								<Grid Width="{Binding ElementName=MainViewWidthSlider, Path=Value}">
-									<Image Source="{Binding SubFile}"
+									<Image Source="{Binding SubFile, Converter={StaticResource ImageConverter}}"
 									       d:DataContext="{d:DesignInstance local:PairData}" />
 								</Grid>
 							</DataTemplate>
@@ -110,7 +107,7 @@
 			<ListView.ItemTemplate>
 				<DataTemplate>
 					<Grid Width="{Binding ElementName=SubViewWidthSlider, Path=Value}">
-						<Image Source="{Binding}" />
+						<Image Source="{Binding Converter={StaticResource ImageConverter}}" />
 					</Grid>
 				</DataTemplate>
 			</ListView.ItemTemplate>

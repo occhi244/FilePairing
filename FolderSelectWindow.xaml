@@ -30,6 +30,7 @@
                          IsReadOnly="True" />
                 <Button Name="MainSelectButton"
                         Content="参照..."
+                        Click="FolderSelectButton_OnClick"
                         Width="100"
                         Height="24"
                         Margin="0,2,0,0"
@@ -48,6 +49,7 @@
 			             IsReadOnly="True" />
 			    <Button Name="SubSelectButton"
 			            Content="参照..."
+                        Click="FolderSelectButton_OnClick"
 			            Width="100"
 			            Height="24"
                         Margin="0,2,0,0"

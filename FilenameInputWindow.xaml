@@ -4,7 +4,9 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:FilePairing"
+        d:DataContext="{d:DesignInstance local:FilenameInputViewModel}"
         mc:Ignorable="d"
+		WindowStartupLocation="CenterOwner"
         Title="ファイル名の設定" Height="130" Width="400">
     <Grid Margin="4">
 		<Grid.ColumnDefinitions>
@@ -26,6 +28,7 @@
 				</Grid.ColumnDefinitions>
 				<Label Content="ファイル名:" Grid.Column="0" />
 				<TextBox Text="{Binding MainFilename}"
+						 VerticalContentAlignment="Center"
 						 Height="24"
 						 Grid.Column="1" />
 			</Grid>
@@ -39,7 +42,8 @@
 					<ColumnDefinition Width="*" />
 				</Grid.ColumnDefinitions>
 				<Label Content="ファイル名:" Grid.Column="0" />
-				<TextBox Text="{Binding MainFilename}"
+				<TextBox Text="{Binding SubFilename}"
+						 VerticalContentAlignment="Center"
 						 Height="24"
 						 Grid.Column="1" />
 			</Grid>
