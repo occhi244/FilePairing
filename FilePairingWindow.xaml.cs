@@ -181,7 +181,7 @@ namespace FilePairing
 				subFileList.Remove(droppedFilename);
 				droppedLine.SubFile = droppedFilename;
 			}
-			
+
 			lv.SelectedItem = droppedLine;
 		}
 

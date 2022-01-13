@@ -20,7 +20,7 @@ namespace FilePairing
 
 
 		/// <summary>
-		/// 
+		/// メインフォルダ
 		/// </summary>
 		public string MainPath
 		{
@@ -30,7 +30,7 @@ namespace FilePairing
 
 
 		/// <summary>
-		/// 
+		/// サブフォルダ
 		/// </summary>
 		public string SubPath
 		{
