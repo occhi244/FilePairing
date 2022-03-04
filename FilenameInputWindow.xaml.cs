@@ -75,19 +75,6 @@ namespace FilePairing
 				return;
 			}
 
-			if (Directory.GetFiles(MainPath)
-				.FirstOrDefault(i => Path.GetFileName(i).StartsWith($"{ViewModel.MainFilename}-")) != null)
-			{
-				MessageBox.Show($"メインファイルのフォルダに、[{ViewModel.MainFilename}]で始まるファイルが既に存在しています", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
-				return;
-			}
-			if (Directory.GetFiles(SubPath)
-				.FirstOrDefault(i => Path.GetFileName(i).StartsWith($"{ViewModel.SubFilename}-")) != null)
-			{
-				MessageBox.Show($"サブファイルのフォルダに、[{ViewModel.SubFilename}]で始まるファイルが既に存在しています", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
-				return;
-			}
-
 			DialogResult = true;
 			Close();
 		}

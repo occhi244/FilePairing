@@ -11,7 +11,7 @@ namespace FilePairing
 	/// <summary>
 	/// FolderSelectWindow.xaml の相互作用ロジック
 	/// </summary>
-	public partial class FolderSelectWindow : Window
+	public partial class FolderSelectWindow
 	{
 		/// <summary>
 		/// フォルダ ビューモデル
@@ -74,7 +74,10 @@ namespace FilePairing
 		/// <param name="e"></param>
 		private void MainFolderGroup_OnDrop(object sender, DragEventArgs e)
 		{
-			if (!GetFolderPath(e, out var folderName)) return;
+			if (!GetFolderPath(e, out var folderName))
+			{
+				return;
+			}
 
 			ViewModel.MainFolderName = folderName;
 		}
@@ -87,7 +90,10 @@ namespace FilePairing
 		/// <param name="e"></param>
 		private void SubFolderGroup_OnDrop(object sender, DragEventArgs e)
 		{
-			if (!GetFolderPath(e, out var folderName)) return;
+			if (!GetFolderPath(e, out var folderName))
+			{
+				return;
+			}
 
 			ViewModel.SubFolderName = folderName;
 		}
@@ -131,7 +137,10 @@ namespace FilePairing
 		/// <param name="e"></param>
 		private void FolderSelectButton_OnClick(object sender, RoutedEventArgs e)
 		{
-			if (!(sender is Button senderButton)) return;
+			if (!(sender is Button senderButton))
+			{
+				return;
+			}
 
 			var typeName = senderButton.Name == "MainSelectButton" ? "メイン" : "サブ";
 
@@ -141,7 +150,10 @@ namespace FilePairing
 				Title = $"{typeName}・フォルダを選択してください",
 				InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory)
 			};
-			if (dialog.ShowDialog() != MSAPI::Dialogs.CommonFileDialogResult.Ok) return;
+			if (dialog.ShowDialog() != MSAPI::Dialogs.CommonFileDialogResult.Ok)
+			{
+				return;
+			}
 
 			switch (senderButton.Name)
 			{
@@ -170,9 +182,9 @@ namespace FilePairing
 		/// </summary>
 		/// <param name="propertyName"></param>
 		private void RaisePropertyChanged([CallerMemberName] string propertyName = null)
-			=> PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-
-
+		{
+			PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+		}
 
 		private string _mainFolderName;
 		public string MainFolderName

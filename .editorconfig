@@ -1,0 +1,4 @@
+﻿[*.cs]
+
+# IDE0058: 式の値が使用されていません
+dotnet_diagnostic.IDE0058.severity = none

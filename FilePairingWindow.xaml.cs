@@ -17,7 +17,7 @@ namespace FilePairing
 	/// <summary>
 	/// MainWindow.xaml の相互作用ロジック
 	/// </summary>
-	public partial class FilePairingWindow : Window
+	public partial class FilePairingWindow
 	{
 		public MainViewModel ViewModel
 		{
@@ -39,7 +39,6 @@ namespace FilePairing
 		}
 
 
-
 		// Drag&Drop control objects.
 		private ListView _sourceListView;
 
@@ -49,7 +48,6 @@ namespace FilePairing
 		/// default is false
 		/// </summary>
 		private bool _isRowMove;
-
 
 
 
@@ -295,14 +293,11 @@ namespace FilePairing
 	/// <summary>
 	/// メインリスト 幅コンバーター
 	/// </summary>
-
 	public class MainListViewWidthConverter : IValueConverter
 	{
 		public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
 		{
-			if (!(value is double width)) throw new ArgumentException("not double");
-
-			return $"{(width+10)*2 + 28}";
+			return !(value is double width) ? throw new ArgumentException("not double") : $"{((width + 10) * 2) + 28}";
 		}
 
 		public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
@@ -325,10 +320,14 @@ namespace FilePairing
 				new FrameworkPropertyMetadata(string.Empty));
 
 		public static string GetFilename(DependencyObject target)
-			=> (string)target.GetValue(RemarkProperty);
+		{
+			return (string)target.GetValue(RemarkProperty);
+		}
 
 		public static void SetFilename(DependencyObject target, string value)
-			=> target.SetValue(RemarkProperty, value);
+		{
+			target.SetValue(RemarkProperty, value);
+		}
 	}
 
 
@@ -348,8 +347,9 @@ namespace FilePairing
 		/// </summary>
 		/// <param name="propertyName"></param>
 		private void RaisePropertyChanged([CallerMemberName] string propertyName = null)
-			=> PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-
+		{
+			PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+		}
 
 		private ObservableCollection<PairData> _mainViewFiles;
 		public ObservableCollection<PairData> MainViewFiles
@@ -388,7 +388,9 @@ namespace FilePairing
 		/// </summary>
 		/// <param name="propertyName"></param>
 		private void RaisePropertyChanged([CallerMemberName] string propertyName = null)
-			=> PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+		{
+			PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+		}
 
 		private string _mainFile;
 		public string MainFile

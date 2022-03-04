@@ -1,7 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
-using System.Windows;
 using Path = System.IO.Path;
 
 namespace FilePairing
@@ -9,8 +9,15 @@ namespace FilePairing
 	/// <summary>
 	/// MainWindow.xaml の相互作用ロジック
 	/// </summary>
-	public partial class MainWindow : Window
-	{
+	public partial class MainWindow
+    {
+		/// <summary>
+		/// 一時ファイル名 ベース
+		/// </summary>
+        private const string TempBaseName = ".$temp";
+
+
+
 		/// <summary>
 		/// コンストラクタ
 		/// </summary>
@@ -71,38 +78,67 @@ namespace FilePairing
 		/// <summary>
 		/// ファイル名変更
 		/// </summary>
-		/// <param name="mainFilename">メイン・ベースファイル名</param>
-		/// <param name="subFilename">サブ・ベースファイル名</param>
+		/// <param name="mainBaseFilename">メイン・ベースファイル名</param>
+		/// <param name="subMainFilename">サブ・ベースファイル名</param>
 		/// <param name="pairDataList">ペアデータのリスト</param>
-		private static void RenameFiles(string mainFilename, string subFilename, Collection<PairData> pairDataList)
+		private static void RenameFiles(string mainBaseFilename, string subMainFilename, Collection<PairData> pairDataList)
 		{
 			var count = 0;
 			var digit = pairDataList.Count.ToString().Length;
+            var mainTempFilenames = new List<string>(pairDataList.Count);
+            var subTempFilenames = new List<string>(pairDataList.Count);
 
 			foreach (var pairData in pairDataList)
 			{
 				if (string.IsNullOrEmpty(pairData.SubFile)) continue;
 
-				var suffix = $"{++count}".PadLeft(digit, '0');
+				var fileSequence = $"{++count}".PadLeft(digit, '0');
 
-				Rename(pairData.MainFile, mainFilename, suffix);
-				Rename(pairData.SubFile, subFilename, suffix);
+				mainTempFilenames.Add(RenameToTemp(pairData.MainFile, fileSequence, string.Empty));
+				subTempFilenames.Add(RenameToTemp(pairData.SubFile, fileSequence, string.Empty));
 			}
+
+            foreach (var filename in mainTempFilenames)
+            {
+                RenameFromTemp(filename, mainBaseFilename);
+            }
+            foreach (var filename in subTempFilenames)
+            {
+                RenameFromTemp(filename, subMainFilename);
+            }
 		}
+
 
 
 		/// <summary>
-		/// ファイル名変更
+		/// ファイル名変更 (一時ファイル名)
 		/// </summary>
-		/// <param name="source">変更元ファイル名 (フルパス)</param>
-		/// <param name="baseName">変更先 ベース名</param>
+		/// <param name="sourceFilename">変更元ファイル名 (フルパス)</param>
 		/// <param name="count">シーケンス番号</param>
-		private static void Rename(string source, string baseName, string count)
-		{
-			var path = Path.GetDirectoryName(source);
-			var ext = Path.GetExtension(source);
+		/// <param name="suffix">サフィックス</param>
+		/// <returns>リネームされた一時ファイル名</returns>
+		private static string RenameToTemp(string sourceFilename, string count, string suffix)
+        {
+            var path = Path.GetDirectoryName(sourceFilename);
+            var ext = Path.GetExtension(sourceFilename);
+            var tempFilename = $@"{path}\{TempBaseName}-{count}{suffix}{ext}";
 
-			File.Move(source, $@"{path}\{baseName}-{count}{ext}");
-		}
+			File.Move(sourceFilename, tempFilename);
+
+            return tempFilename;
+        }
+
+
+		/// <summary>
+		/// Rename フェーズ2
+		/// </summary>
+		/// <param name="tempName">テンポラリ・ファイル名</param>
+		/// <param name="toBaseName">テンポラリ・ファイル名を置き換えるベース・ファイル名</param>
+		private static void RenameFromTemp(string tempName, string toBaseName)
+        {
+            var toName = tempName.Replace(TempBaseName, toBaseName);
+
+			File.Move(tempName, toName);
+        }
 	}
 }
