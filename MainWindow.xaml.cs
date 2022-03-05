@@ -70,7 +70,7 @@ namespace FilePairing
 				return;
 			}
 
-			RenameFiles(filenameWindow.ViewModel.MainFilename, filenameWindow.ViewModel.SubFilename, pairingWindow.ViewModel.MainViewFiles);
+			RenameFiles(filenameWindow.ViewModel.MainFilename, filenameWindow.ViewModel.SubFilename, pairingWindow.ViewModel.MatchingViewFiles);
 			Close();
 		}
 
@@ -94,9 +94,9 @@ namespace FilePairing
 
 				var fileSequence = $"{++count}".PadLeft(digit, '0');
 
-				mainTempFilenames.Add(RenameToTemp(pairData.MainFile, fileSequence, string.Empty));
-				subTempFilenames.Add(RenameToTemp(pairData.SubFile, fileSequence, string.Empty));
-			}
+                RenameToTemp(mainTempFilenames, pairData.MainFileSet, fileSequence);
+                RenameToTemp(subTempFilenames, pairData.SubFileSet, fileSequence);
+            }
 
             foreach (var filename in mainTempFilenames)
             {
@@ -113,19 +113,32 @@ namespace FilePairing
 		/// <summary>
 		/// ファイル名変更 (一時ファイル名)
 		/// </summary>
-		/// <param name="sourceFilename">変更元ファイル名 (フルパス)</param>
-		/// <param name="count">シーケンス番号</param>
-		/// <param name="suffix">サフィックス</param>
-		/// <returns>リネームされた一時ファイル名</returns>
-		private static string RenameToTemp(string sourceFilename, string count, string suffix)
+		/// <param name="renamedFilenameList">変更されたファイル名のリスト</param>
+		/// <param name="sourceFileSet">変更するファイルセット</param>
+		/// <param name="count">シーケンスカウント</param>
+		/// <returns>renamedFilenameList</returns>
+        public static List<string> RenameToTemp(List<string> renamedFilenameList, ImageFileSet sourceFileSet, string count)
         {
-            var path = Path.GetDirectoryName(sourceFilename);
-            var ext = Path.GetExtension(sourceFilename);
-            var tempFilename = $@"{path}\{TempBaseName}-{count}{suffix}{ext}";
+            var path = Path.GetDirectoryName(sourceFileSet.PrimaryFile);
+            var ext = Path.GetExtension(sourceFileSet.PrimaryFile);
+            var tempFilename = $@"{path}\{TempBaseName}-{count}{ext}";
 
-			File.Move(sourceFilename, tempFilename);
+            if (string.IsNullOrEmpty(sourceFileSet.PrimaryFile)) return renamedFilenameList;
 
-            return tempFilename;
+			File.Move(sourceFileSet.PrimaryFile, tempFilename);
+			renamedFilenameList.Add(tempFilename);
+
+            var suffix = 0;
+            foreach (var suffixFile in sourceFileSet.SuffixFileCollection)
+            {
+				tempFilename = $@"{path}\{TempBaseName}-{count}_{++suffix}{ext}";
+
+                File.Move(suffixFile, tempFilename);
+
+				renamedFilenameList.Add(tempFilename);
+            }
+
+			return renamedFilenameList;
         }
 
 

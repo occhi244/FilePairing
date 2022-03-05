@@ -9,7 +9,7 @@
 		WindowStartupLocation="CenterOwner"
 		Loaded="MainWindow_OnLoaded"
 		ContentRendered="MainWindow_OnContentRendered"
-        Title="ファイルのマッチング" Height="900" Width="1400">
+        Title="ファイルのマッチング" Height="1400" Width="1800">
 	<Window.Resources>
 		<local:ColumnWidthConverter x:Key="ColumnWidthConverter" />
 		<local:MainListViewWidthConverter x:Key="MainListViewWidthConverter" />
@@ -18,16 +18,50 @@
 
 	<Grid Margin="4">
 		<Grid.ColumnDefinitions>
-			<ColumnDefinition Width="{Binding ElementName=MainViewWidthSlider, Path=Value, Converter={StaticResource MainListViewWidthConverter}}" />
-			<ColumnDefinition Width="*" />
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="{Binding ElementName=MatchingViewWidthSlider, Path=Value, Converter={StaticResource MainListViewWidthConverter}}" />
+			<ColumnDefinition Width="2*" />
 		</Grid.ColumnDefinitions>
 		<Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-		<Grid Margin="2,0,2,2"
-		      Grid.Column="0" Grid.Row="0">
+        <StackPanel Orientation="Horizontal"
+                    VerticalAlignment="Center"
+                    HorizontalAlignment="Right"
+                    Grid.Column="0" Grid.Row="0" Margin="0,4">
+            <Slider Value="160"
+                    Name="MainViewWidthSlider"
+                    Minimum="40"
+                    Maximum="400"
+                    Width="120" />
+        </StackPanel>
+        <ListView Name="AddListView"
+                  ItemsSource="{Binding MainViewFiles}"
+                  AllowDrop="True"
+                  PreviewMouseLeftButtonDown="MainListView_OnPreviewMouseLeftButtonDown"
+                  Drop="SubListView_OnDrop"
+                  SelectionMode="Single"
+                  ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                  Grid.Column="0" Grid.Row="1">
+            <ListView.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <WrapPanel />
+                </ItemsPanelTemplate>
+            </ListView.ItemsPanel>
+            <ListView.ItemTemplate>
+                <DataTemplate>
+                    <Grid Width="{Binding ElementName=MainViewWidthSlider, Path=Value}">
+                        <Image Source="{Binding Converter={StaticResource ImageConverter}}" />
+                    </Grid>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
+
+
+        <Grid Margin="2,0,2,2"
+		      Grid.Column="1" Grid.Row="0">
 			<Grid.ColumnDefinitions>
 				<ColumnDefinition Width="Auto" />
 				<ColumnDefinition Width="*" />
@@ -35,7 +69,7 @@
 			</Grid.ColumnDefinitions>
 
 			<Slider Value="240"
-					Name="MainViewWidthSlider"
+					Name="MatchingViewWidthSlider"
 					Minimum="60"
 					Maximum="480"
 					Width="120"
@@ -48,31 +82,44 @@
 		</Grid>
 
 	    <ListView Name="MainListView"
-				  ItemsSource="{Binding MainViewFiles}"
+				  ItemsSource="{Binding MatchingViewFiles}"
 				  AllowDrop="True"
-				  PreviewMouseLeftButtonDown="MainListView_OnMouseLeftButtonDown"
-	              Drop="MainListView_OnDrop"
-	              Grid.Column="0" Grid.Row="1">
+				  PreviewMouseLeftButtonDown="MatchingListView_OnMouseLeftButtonDown"
+	              Drop="MatchingListView_OnDrop"
+                  d:DataContext="{d:DesignInstance local:PairData}" 
+	              Grid.Column="1" Grid.Row="1">
 		    <ListView.View>
 				<GridView>
-					<GridViewColumn Header="メイン" Width="{Binding ElementName=MainViewWidthSlider, Path=Value, Converter={StaticResource ColumnWidthConverter}}">
+					<GridViewColumn Header="メイン" Width="{Binding ElementName=MatchingViewWidthSlider, Path=Value, Converter={StaticResource ColumnWidthConverter}}">
 						<GridViewColumn.CellTemplate>
 							<DataTemplate>
-								<Grid Width="{Binding ElementName=MainViewWidthSlider, Path=Value}">
+								<Grid Width="{Binding ElementName=MatchingViewWidthSlider, Path=Value}">
 									<Image Source="{Binding MainFile, Converter={StaticResource ImageConverter}}"
-										   local:ControlAttachedProperty.Filename="{Binding MainFile}"
-										   d:DataContext="{d:DesignInstance local:PairData}" />
-								</Grid>
+										   local:ControlAttachedProperty.Filename="{Binding MainFile}" />
+                                    <StackPanel
+										Orientation="Horizontal"
+                                        Visibility="{Binding MainFileSuffixIconVisibility}"
+                                        VerticalAlignment="Top" HorizontalAlignment="Right" Margin="4">
+                                        <Image Source="Resources/layers-triple-36b.png" Width="36" Height="36" />
+                                        <TextBlock Text="{Binding MainFileSuffixFileCount, StringFormat=×{0}}" FontSize="24" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </Grid>
 							</DataTemplate>
 						</GridViewColumn.CellTemplate>
 					</GridViewColumn>
-					<GridViewColumn Header="サブ" Width="{Binding ElementName=MainViewWidthSlider, Path=Value, Converter={StaticResource ColumnWidthConverter}}">
+					<GridViewColumn Header="サブ" Width="{Binding ElementName=MatchingViewWidthSlider, Path=Value, Converter={StaticResource ColumnWidthConverter}}">
 						<GridViewColumn.CellTemplate>
 							<DataTemplate>
-								<Grid Width="{Binding ElementName=MainViewWidthSlider, Path=Value}">
-									<Image Source="{Binding SubFile, Converter={StaticResource ImageConverter}}"
-									       d:DataContext="{d:DesignInstance local:PairData}" />
-								</Grid>
+								<Grid Width="{Binding ElementName=MatchingViewWidthSlider, Path=Value}">
+									<Image Source="{Binding SubFile, Converter={StaticResource ImageConverter}}" />
+                                    <StackPanel
+										Orientation="Horizontal"
+                                        Visibility="{Binding SubFileSuffixIconVisibility}"
+                                        VerticalAlignment="Top" HorizontalAlignment="Right" Margin="4">
+                                        <Image Source="Resources/layers-triple-36b.png" Width="36" Height="36" />
+										<TextBlock Text="{Binding SubFileSuffixFileCount, StringFormat=×{0}}" FontSize="24" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </Grid>
 							</DataTemplate>
 						</GridViewColumn.CellTemplate>
 					</GridViewColumn>
@@ -80,11 +127,10 @@
 			</ListView.View>
 	    </ListView>
 
-
 		<StackPanel Orientation="Horizontal"
 					VerticalAlignment="Center"
 					HorizontalAlignment="Right"
-		            Grid.Column="1" Grid.Row="0" Margin="0,4,1.333,4">
+		            Grid.Column="2" Grid.Row="0" Margin="0,4">
 			<Slider Value="160"
 					Name="SubViewWidthSlider"
 			        Minimum="40"
@@ -98,7 +144,7 @@
 				  Drop="SubListView_OnDrop"
 		          SelectionMode="Single"
 				  ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-		          Grid.Column="1" Grid.Row="1">
+		          Grid.Column="2" Grid.Row="1">
 			<ListView.ItemsPanel>
 				<ItemsPanelTemplate>
 					<WrapPanel />
