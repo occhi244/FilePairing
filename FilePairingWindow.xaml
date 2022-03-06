@@ -37,11 +37,11 @@
                     Maximum="400"
                     Width="120" />
         </StackPanel>
-        <ListView Name="AddListView"
+        <ListView Name="MainListView"
                   ItemsSource="{Binding MainViewFiles}"
                   AllowDrop="True"
                   PreviewMouseLeftButtonDown="MainListView_OnPreviewMouseLeftButtonDown"
-                  Drop="SubListView_OnDrop"
+                  Drop="MainListView_OnDrop"
                   SelectionMode="Single"
                   ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                   Grid.Column="0" Grid.Row="1">
@@ -81,7 +81,7 @@
 			        Grid.Column="2" />
 		</Grid>
 
-	    <ListView Name="MainListView"
+	    <ListView Name="MatchingListView"
 				  ItemsSource="{Binding MatchingViewFiles}"
 				  AllowDrop="True"
 				  PreviewMouseLeftButtonDown="MatchingListView_OnMouseLeftButtonDown"

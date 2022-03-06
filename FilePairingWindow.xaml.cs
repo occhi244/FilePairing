@@ -6,6 +6,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -51,14 +52,22 @@ namespace FilePairing
 
 
 
+        /// <summary>
+        /// シフトキーが押されているか
+        /// </summary>
+        public bool IsShiftKeyPressed =>
+            (Keyboard.GetKeyStates(Key.LeftShift) & KeyStates.Down) == KeyStates.Down ||
+            (Keyboard.GetKeyStates(Key.RightShift) & KeyStates.Down) == KeyStates.Down;
+
+
+
+
 		/// <summary>
 		/// コンストラクタ
 		/// </summary>
 		public FilePairingWindow()
 		{
 			InitializeComponent();
-
-			ViewModel = new MainViewModel();
 		}
 
 
@@ -69,13 +78,126 @@ namespace FilePairing
 		/// <param name="e"></param>
 		private void MainWindow_OnLoaded(object sender, RoutedEventArgs e)
 		{
-			// show progress dialog
-
-			ViewModel.MatchingViewFiles = new ObservableCollection<PairData>(GetImageFiles(MainPath).Select(i => new PairData(){ MainFile = i }));
-			ViewModel.SubViewFiles = new ObservableCollection<string>(GetImageFiles(SubPath));
-
-			DataContext = ViewModel;
+			ViewModel = SetupViewModel(MainPath, SubPath);
+            DataContext = ViewModel;
 		}
+
+
+
+		/// <summary>
+		/// ビューモデルのセットアップ
+		/// </summary>
+		/// <param name="mainPath"></param>
+		/// <param name="subPath"></param>
+		/// <returns></returns>
+        private static MainViewModel SetupViewModel(string mainPath, string subPath)
+        {
+            var mainFiles = GetImageFiles(mainPath);
+            var subFiles = GetImageFiles(subPath);
+            var matchedFiles = new List<PairData>();
+
+            const string pattern = @"(.+)(-\d+)(_\d+)?.(jpg|jpeg|png)$";
+            var regex = new Regex(pattern,RegexOptions.IgnoreCase);
+
+            //var prevMainFileBasename = string.Empty;
+            PairData prevPairData = null;
+
+            foreach (var mainFile in mainFiles)
+            {
+                var mm = regex.Match(mainFile);
+                if (!mm.Success)
+                {
+                    continue;
+                }
+
+                if (string.IsNullOrEmpty(mm.Groups[3].ToString()))
+                {
+                    var newPairData = new PairData
+                    {
+                        MainFile = mainFile
+                    };
+
+                    var mainFileSeq = mm.Groups[2].ToString();
+
+                    var matchedSubFiles = new List<string>();
+
+                    foreach (var subFile in subFiles)
+                    {
+                        var ms = regex.Match(subFile);
+
+                        if (!ms.Success)
+                        {
+                            continue;
+                        }
+
+                        var subFileSeq = ms.Groups[2].ToString();
+
+                        if (subFileSeq == mainFileSeq)
+                        {
+                            if (string.IsNullOrEmpty(ms.Groups[3].ToString()))
+                            {
+                                newPairData.SubFile = subFile;
+                            }
+                            else
+                            {
+                                newPairData.SubFileSet.AddSuffixFile(subFile);
+                            }
+							matchedSubFiles.Add(subFile);
+                        }
+                        else if (string.Compare(subFileSeq, mainFileSeq, StringComparison.Ordinal) > 0)
+                        {
+                            break;
+                        }
+                    }
+
+                    foreach (var matchedSubFile in matchedSubFiles)
+                    {
+						subFiles.Remove(matchedSubFile);
+					}
+
+                    if (prevPairData != null)
+                    {
+                        matchedFiles.Add(prevPairData);
+                    }
+
+                    prevPairData = newPairData;
+                }
+				else if (mm.Groups.Count > 2)
+                {
+                    prevPairData?.MainFileSet.AddSuffixFile(mainFile);
+                }
+            }
+
+            if (prevPairData != null)
+            {
+				matchedFiles.Add(prevPairData);
+            }
+
+            if (matchedFiles.Count == 0)
+            {
+                matchedFiles.AddRange(mainFiles.Select(mainFile => new PairData { MainFile = mainFile }));
+                mainFiles.Clear();
+            }
+            else
+            {
+                foreach (var matchedFile in matchedFiles)
+                {
+                    mainFiles.Remove(matchedFile.MainFile);
+                    foreach (var suffixFile in matchedFile.MainFileSet.SuffixFileCollection)
+                    {
+                        mainFiles.Remove(suffixFile);
+                    }
+                }
+            }
+
+            return new MainViewModel
+            {
+                MainViewFiles = new ObservableCollection<string>(mainFiles),
+                SubViewFiles = new ObservableCollection<string>(subFiles),
+				MatchingViewFiles = new ObservableCollection<PairData>(matchedFiles)
+            };
+        }
+
 
 
 		/// <summary>
@@ -83,13 +205,13 @@ namespace FilePairing
 		/// </summary>
 		/// <param name="path"></param>
 		/// <returns></returns>
-		private static IEnumerable<string> GetImageFiles(string path)
+		private static List<string> GetImageFiles(string path)
 		{
 			return Directory.GetFiles(path).Where(i =>
 				i.EndsWith(".jpg", StringComparison.CurrentCultureIgnoreCase) ||
 				i.EndsWith(".jpeg", StringComparison.CurrentCultureIgnoreCase) ||
 				i.EndsWith(".png", StringComparison.CurrentCultureIgnoreCase))
-				.OrderBy(i => i).ToArray();
+				.OrderBy(i => i).ToList();
 		}
 
 
@@ -104,8 +226,9 @@ namespace FilePairing
 		}
 
 
+
 		/// <summary>
-		/// メインリスト マウスボタン処理
+		/// マッチング・リストビュー マウスボタン処理
 		/// </summary>
 		/// <param name="sender"></param>
 		/// <param name="e"></param>
@@ -128,7 +251,7 @@ namespace FilePairing
 
 
 		/// <summary>
-		/// メインリスト ドロップ処理
+		/// マッチング・リストビュー ドロップ処理
 		/// </summary>
 		/// <param name="sender"></param>
 		/// <param name="e"></param>
@@ -142,6 +265,7 @@ namespace FilePairing
 
 			if (!(lv.ItemsSource is ObservableCollection<PairData> sourceList)) return;
 			if (!(SubListView.ItemsSource is ObservableCollection<string> subFileList)) return;
+            if (!(MainListView.ItemsSource is ObservableCollection<string> mainFileList)) return;
 
 			if (e.Data.GetDataPresent(typeof(PairData))) // 他の行からの移動
 			{
@@ -162,7 +286,7 @@ namespace FilePairing
                         pairDataDroppedAt.Merge(droppedItem);
                     }
 				}
-				else
+				else if (droppedItem != pairDataDroppedAt)
 				{
 					if (!string.IsNullOrEmpty(pairDataDroppedAt.SubFile))
 					{
@@ -176,29 +300,47 @@ namespace FilePairing
 					}
 				}
 			}
-			else if (e.Data.GetDataPresent(DataFormats.Text)) // サブファイルリストからの移動
+			else if (e.Data.GetDataPresent(DataFormats.Text)) // メイン・サブファイルリストからの移動
 			{
 				var droppedFilename = e.Data.GetData(DataFormats.Text) as string;
 
-				if (!string.IsNullOrEmpty(pairDataDroppedAt.SubFile))
-				{
-                    if (IsShiftKeyPressed)
+                if (_sourceListView == SubListView)
+                {
+                    if (!string.IsNullOrEmpty(pairDataDroppedAt.SubFile))
                     {
-						pairDataDroppedAt.SubFileSet.AddSuffixFile(droppedFilename);
+                        if (IsShiftKeyPressed)
+                        {
+                            pairDataDroppedAt.SubFileSet.AddSuffixFile(droppedFilename);
+                        }
+                        else
+                        {
+                            subFileList.Add(pairDataDroppedAt.SubFile);
+                            pairDataDroppedAt.SubFile = droppedFilename;
+                        }
                     }
                     else
                     {
-						subFileList.Add(pairDataDroppedAt.SubFile);
                         pairDataDroppedAt.SubFile = droppedFilename;
-					}
-                }
+                    }
+
+                    subFileList.Remove(droppedFilename);
+				}
                 else
                 {
-					pairDataDroppedAt.SubFile = droppedFilename;
-				}
+                    if (!IsShiftKeyPressed)
+                    {
+                        ViewModel.MatchingViewFiles.Insert(sourceList.IndexOf(pairDataDroppedAt), new PairData
+                        {
+                            MainFile = droppedFilename
+                        });
+                    }
+                    else
+                    {
+                        pairDataDroppedAt.MainFileSet.AddSuffixFile(droppedFilename);
+                    }
 
-				subFileList.Remove(droppedFilename);
-				//pairDataDroppedAt.SubFile = droppedFilename;
+                    mainFileList.Remove(droppedFilename);
+                }
 			}
 
 			lv.SelectedItem = pairDataDroppedAt;
@@ -206,14 +348,60 @@ namespace FilePairing
 
 
 		/// <summary>
-		/// シフトキーが押されているか
+		/// メインファイルリストのマウスボタン処理
 		/// </summary>
-        public bool IsShiftKeyPressed =>
-            (Keyboard.GetKeyStates(Key.LeftShift) & KeyStates.Down) == KeyStates.Down ||
-            (Keyboard.GetKeyStates(Key.RightShift) & KeyStates.Down) == KeyStates.Down;
+		/// <param name="sender"></param>
+		/// <param name="e"></param>
+        private void MainListView_OnPreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (!(sender is ListView sourceListView)) return;
+            if (!(e.OriginalSource is Image image)) return;
+
+            _sourceListView = sourceListView;
+
+            DragDrop.DoDragDrop(sourceListView, image.DataContext, DragDropEffects.Move);
+
+            CleanupDragDrop();
+        }
+
 
 
         /// <summary>
+        /// サブリストのドロップ処理
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void MainListView_OnDrop(object sender, DragEventArgs e)
+        {
+            if (_sourceListView == SubListView) return;
+			if (!_isRowMove) return;
+			if (!(sender is ListView lv)) return;
+            if (!(lv.ItemsSource is ObservableCollection<string> sourceList)) return;
+
+            if (!(e.Data.GetData(typeof(PairData)) is PairData pairData)) return;
+
+            if (ViewModel.MatchingViewFiles.Count == 1 && pairData.MainFileSet.SuffixFileCount == 0)
+            {
+                MessageBox.Show("すべての行を移動することはできません");
+                return;
+            }
+
+			if (PopImageFile(pairData.MainFileSet, sourceList))
+            {
+                ViewModel.MatchingViewFiles.Remove(pairData);
+
+                ViewModel.SubViewFiles.Add(pairData.SubFile);
+                foreach (var suffixFile in pairData.SubFileSet.ClearSuffixFiles())
+                {
+                    ViewModel.SubViewFiles.Add(suffixFile);
+                }
+            }
+
+			_isRowMove = false;
+        }
+
+
+		/// <summary>
 		/// サブリストのマウスボタン処理
 		/// </summary>
 		/// <param name="sender"></param>
@@ -245,21 +433,32 @@ namespace FilePairing
 
 			if (!(e.Data.GetData(typeof(PairData)) is PairData pairData)) return;
 
-            sourceList.Add(pairData.SubFile);
-            pairData.SubFile = string.Empty;
+            if (PopImageFile(pairData.SubFileSet, sourceList))
+            {
+                pairData.SubFile = string.Empty;
+			}
+        }
 
-			if (IsShiftKeyPressed)
+
+        private bool PopImageFile(ImageFileSet fileSet, ObservableCollection<string> sourceList)
+        {
+            if (fileSet.SuffixFileCount > 0)
             {
-				foreach (var suffixFile in pairData.SubFileSet.ClearSuffixFiles())
+                if (!IsShiftKeyPressed)
                 {
-					sourceList.Add(suffixFile);
-				}
+                    sourceList.Add(fileSet.PopSuffixFile());
+                    return false;
+                }
+                foreach (var suffixFile in fileSet.ClearSuffixFiles())
+                {
+                    sourceList.Add(suffixFile);
+                }
             }
-            else if (pairData.SubFileSet.SuffixFileCount > 0)
-            {
-                pairData.SubFile = pairData.SubFileSet.PopSuffixFile();
-            }
-		}
+            sourceList.Add(fileSet.PrimaryFile);
+
+            return true;
+        }
+
 
 
 		/// <summary>
@@ -273,7 +472,6 @@ namespace FilePairing
 		}
 
 
-
 		/// <summary>
 		/// 完了ボタン処理
 		/// </summary>
@@ -284,15 +482,12 @@ namespace FilePairing
 			DialogResult = true;
 			Close();
 		}
-
-        private void MainListView_OnPreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-        {
-            throw new NotImplementedException();
-        }
     }
 
 
-
+	/// <summary>
+	/// ファイルパスからイメージへのコンバーター
+	/// </summary>
 	public class ImageConverter : IValueConverter
 	{
 		public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
@@ -314,8 +509,7 @@ namespace FilePairing
 		}
 	}
 
-
-
+	
 	/// <summary>
 	/// メインリスト カラム幅コンバーター
 	/// </summary>
@@ -334,9 +528,7 @@ namespace FilePairing
 		}
 	}
 
-
-
-
+	
 	/// <summary>
 	/// メインリスト 幅コンバーター
 	/// </summary>
@@ -410,6 +602,14 @@ namespace FilePairing
 		}
 
 
+
+        public ObservableCollection<string> MainViewFiles
+        {
+            get;
+            set;
+        }
+
+
 		public ObservableCollection<string> SubViewFiles
 		{
 			get;
@@ -441,6 +641,24 @@ namespace FilePairing
 
 
 
+		/// <summary>
+		/// ファイルを加える
+		/// </summary>
+		/// <param name="file"></param>
+        public void Append(string file)
+        {
+            if (string.IsNullOrEmpty(PrimaryFile))
+            {
+                PrimaryFile = file;
+            }
+            else
+            {
+                AddSuffixFile(file);
+            }
+        }
+
+
+
         public void AddSuffixFile(string suffixFilename)
         {
             if (_suffixFiles == null)
@@ -455,7 +673,7 @@ namespace FilePairing
 
         public string PopSuffixFile()
         {
-            var subFile = _suffixFiles[0];
+            var subFile = _suffixFiles[_suffixFiles.Count-1];
 
             _suffixFiles.Remove(subFile);
             if (_suffixFiles.Count == 0)
@@ -583,7 +801,6 @@ namespace FilePairing
 
 
 
-
 		public ImageFileSet SubFileSet
         {
             get;
@@ -631,112 +848,5 @@ namespace FilePairing
 			SubFileSet.Merge(anotherData.SubFileSet);
 			RaiseSubFileSuffixFileChanged();
         }
-
-
-
-
-		/*
-		private string _mainFile;
-		public string MainFile
-		{
-			get => _mainFile;
-			set
-			{
-				_mainFile = value;
-				RaisePropertyChanged();
-			}
-		}
-
-		
-
-
-		/// <summary>
-		/// サブファイルリスト
-		/// </summary>
-		private string _subFile;
-		public string SubFile
-		{
-			get => _subFile;
-			set
-			{
-				_subFile = value;
-				RaisePropertyChanged();
-			}
-		}
-
-
-
-        public void AddSubFileSuffix(string suffixFilename)
-        {
-            if (_subFileSuffixFiles == null)
-            {
-                _subFileSuffixFiles = new List<string>();
-            }
-			_subFileSuffixFiles.Add(suffixFilename);
-
-			RaisePropertyChanged(nameof(SuffixFileCount));
-			RaisePropertyChanged(nameof(SuffixIconVisibility));
-			RaisePropertyChanged(nameof(HasSuffix));
-        }
-
-
-        public string ShiftSubFileSuffix()
-        {
-            var subFile = _subFileSuffixFiles[0];
-
-            _subFileSuffixFiles.Remove(subFile);
-            if (_subFileSuffixFiles.Count == 0)
-            {
-                _subFileSuffixFiles = null;
-            }
-
-            RaisePropertyChanged(nameof(SuffixFileCount));
-			RaisePropertyChanged(nameof(SuffixFileCollection));
-			RaisePropertyChanged(nameof(SuffixIconVisibility));
-			RaisePropertyChanged(nameof(HasSuffix));
-
-            return subFile;
-        }
-
-
-
-        public string[] ClearSubFileSuffix()
-        {
-            var result = _subFileSuffixFiles?.ToArray() ?? Array.Empty<string>();
-
-            _subFileSuffixFiles = null;
-
-            RaisePropertyChanged(nameof(SuffixFileCount));
-			RaisePropertyChanged(nameof(SuffixIconVisibility));
-            RaisePropertyChanged(nameof(HasSuffix));
-
-            return result;
-        }
-
-
-		/// <summary>
-		/// サブファイルのサフィックスファイルリスト
-		/// </summary>
-        private List<string> _subFileSuffixFiles;
-        public ReadOnlyCollection<string> SuffixFileCollection => new ReadOnlyCollection<string>(_subFileSuffixFiles);
-
-
-		/// <summary>
-		/// サブファイルのサフィックスファイル数
-		/// </summary>
-        public int SuffixFileCount => _subFileSuffixFiles?.Count ?? 0;
-
-
-        /// <summary>
-        /// サフィックス・アイコンを表示するかファイルがあるか
-        /// </summary>
-		public Visibility SuffixIconVisibility => HasSuffix ? Visibility.Visible : Visibility.Hidden;
-
-
-		/// <summary>
-		/// サブファイルにサフィックスがあるか
-		/// </summary>
-		public bool HasSuffix => _subFileSuffixFiles != null && _subFileSuffixFiles.Count > 0;
-    */
     }
 }
