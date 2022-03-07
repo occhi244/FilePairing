@@ -20,6 +20,7 @@ namespace FilePairing
 	/// </summary>
 	public partial class FilePairingWindow
 	{
+
 		public MainViewModel ViewModel
 		{
 			get;
@@ -390,10 +391,14 @@ namespace FilePairing
             {
                 ViewModel.MatchingViewFiles.Remove(pairData);
 
-                ViewModel.SubViewFiles.Add(pairData.SubFile);
-                foreach (var suffixFile in pairData.SubFileSet.ClearSuffixFiles())
+                if (!string.IsNullOrEmpty(pairData.SubFile))
                 {
-                    ViewModel.SubViewFiles.Add(suffixFile);
+                    ViewModel.SubViewFiles.Add(pairData.SubFile);
+
+                    foreach (var suffixFile in pairData.SubFileSet.ClearSuffixFiles())
+                    {
+                        ViewModel.SubViewFiles.Add(suffixFile);
+                    }
                 }
             }
 
@@ -590,6 +595,10 @@ namespace FilePairing
 			PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 		}
 
+
+		/// <summary>
+		/// マッチング・ファイル コレクション
+		/// </summary>
 		private ObservableCollection<PairData> _matchingViewFiles;
 		public ObservableCollection<PairData> MatchingViewFiles
 		{
@@ -600,9 +609,11 @@ namespace FilePairing
 				RaisePropertyChanged();
 			}
 		}
+		
 
-
-
+		/// <summary>
+		/// メインファイルリスト
+		/// </summary>
         public ObservableCollection<string> MainViewFiles
         {
             get;
@@ -610,6 +621,9 @@ namespace FilePairing
         }
 
 
+		/// <summary>
+		/// サブファイルリスト
+		/// </summary>
 		public ObservableCollection<string> SubViewFiles
 		{
 			get;
@@ -617,15 +631,22 @@ namespace FilePairing
 		}
 	}
 
+	
 
-
-
-
+	/// <summary>
+	/// イメージファイルセット
+	/// </summary>
     public class ImageFileSet
     {
+		/// <summary>
+		/// サフィックス・ファイル変更処理
+		/// </summary>
         public Action RaiseSuffixFileChanged;
 
 
+		/// <summary>
+		/// プライマリ・ファイル
+		/// </summary>
         public string PrimaryFile
         {
             get;
@@ -658,7 +679,10 @@ namespace FilePairing
         }
 
 
-
+		/// <summary>
+		/// サフィックス・ファイルを追加する
+		/// </summary>
+		/// <param name="suffixFilename"></param>
         public void AddSuffixFile(string suffixFilename)
         {
             if (_suffixFiles == null)
@@ -671,6 +695,10 @@ namespace FilePairing
 		}
 
 
+		/// <summary>
+		/// サフィックス・ファイルを取り出す
+		/// </summary>
+		/// <returns></returns>
         public string PopSuffixFile()
         {
             var subFile = _suffixFiles[_suffixFiles.Count-1];
@@ -687,6 +715,10 @@ namespace FilePairing
         }
 
 
+		/// <summary>
+		/// サフィックス・ファイルをクリアする
+		/// </summary>
+		/// <returns></returns>
         public string[] ClearSuffixFiles()
         {
             var result = _suffixFiles?.ToArray() ?? Array.Empty<string>();
@@ -699,9 +731,17 @@ namespace FilePairing
         }
 
 
+		/// <summary>
+		/// サフィックス・ファイル数
+		/// </summary>
         public int SuffixFileCount => _suffixFiles?.Count ?? 0;
 
 
+
+		/// <summary>
+		/// イメージファイルセットをマージする
+		/// </summary>
+		/// <param name="anotherSet"></param>
         public void Merge(ImageFileSet anotherSet)
         {
             if (!string.IsNullOrEmpty(PrimaryFile))
@@ -748,6 +788,9 @@ namespace FilePairing
 		}
 
 
+		/// <summary>
+		/// コンストラクタ
+		/// </summary>
         public PairData()
         {
             MainFileSet = new ImageFileSet
@@ -762,7 +805,9 @@ namespace FilePairing
         }
 
 
-
+		/// <summary>
+		/// イメージファイルセット
+		/// </summary>
         public ImageFileSet MainFileSet
         {
             get;
@@ -770,7 +815,10 @@ namespace FilePairing
         }
 
 
-        public string MainFile
+        /// <summary>
+        /// メインファイル名
+        /// </summary>
+		public string MainFile
         {
             get => MainFileSet.PrimaryFile;
             set
@@ -781,6 +829,9 @@ namespace FilePairing
         }
 
 
+		/// <summary>
+		/// メインファイルのサフィックス変更を通知する
+		/// </summary>
         public void RaiseMainFileSuffixFileChange()
         {
             RaisePropertyChanged(nameof(MainFileSuffixFileCount));
@@ -801,6 +852,9 @@ namespace FilePairing
 
 
 
+		/// <summary>
+		/// サブファイル・セット
+		/// </summary>
 		public ImageFileSet SubFileSet
         {
             get;
@@ -808,6 +862,9 @@ namespace FilePairing
         }
 
 
+		/// <summary>
+		/// サブファイル名
+		/// </summary>
         public string SubFile
         {
             get => SubFileSet.PrimaryFile;
@@ -819,7 +876,9 @@ namespace FilePairing
         }
 
 
-
+		/// <summary>
+		/// サブファイルのサフィックス変更を通知する
+		/// </summary>
 		public void RaiseSubFileSuffixFileChanged()
         {
             RaisePropertyChanged(nameof(SubFileSuffixFileCount));
@@ -839,7 +898,10 @@ namespace FilePairing
         public Visibility SubFileSuffixIconVisibility => SubFileSuffixFileCount > 0 ? Visibility.Visible : Visibility.Hidden;
 
 
-
+		/// <summary>
+		/// データをマージする
+		/// </summary>
+		/// <param name="anotherData"></param>
         public void Merge(PairData anotherData)
         {
 			MainFileSet.Merge(anotherData.MainFileSet);
