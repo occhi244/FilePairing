@@ -20,7 +20,9 @@ namespace FilePairing
 	/// </summary>
 	public partial class FilePairingWindow
 	{
-
+		/// <summary>
+		/// ビューモデル
+		/// </summary>
 		public MainViewModel ViewModel
 		{
 			get;
@@ -28,12 +30,19 @@ namespace FilePairing
 		}
 
 
+		/// <summary>
+		/// メインファイル・パス
+		/// </summary>
 		public string MainPath
 		{
 			get;
 			set;
 		}
 
+
+		/// <summary>
+		/// サブファイル・パス
+		/// </summary>
 		public string SubPath
 		{
 			get;
@@ -522,26 +531,9 @@ namespace FilePairing
 	{
 		public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
 		{
-			if (!(value is double width)) throw new ArgumentException("not double");
+			if (!(value is GridLength gridLength)) throw new ArgumentException("not double");
 
-			return $"{width+10}";
-		}
-
-		public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-		{
-			throw new NotImplementedException();
-		}
-	}
-
-	
-	/// <summary>
-	/// メインリスト 幅コンバーター
-	/// </summary>
-	public class MainListViewWidthConverter : IValueConverter
-	{
-		public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-		{
-			return !(value is double width) ? throw new ArgumentException("not double") : $"{((width + 10) * 2) + 28}";
+			return $"{(gridLength.Value-10)/2}";
 		}
 
 		public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
