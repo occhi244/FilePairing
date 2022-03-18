@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
+using System.Windows;
 using Path = System.IO.Path;
 
 namespace FilePairing
@@ -11,6 +13,13 @@ namespace FilePairing
     /// </summary>
     public partial class MainWindow
     {
+        /// <summary>
+        /// 適用除外ファイルのプリフィックス
+        /// </summary>
+        public const string ExclFilePrefix = "除外_";
+
+
+
 		/// <summary>
 		/// コンストラクタ
 		/// </summary>
@@ -23,27 +32,46 @@ namespace FilePairing
 		/// <summary>
 		/// メイン処理
 		/// </summary>
-		private void MainWindow_OnContentRendered(object sender, EventArgs e)
-		{
-			// Input folders
-			var folderWindow = new FolderSelectWindow
-			{
-				Owner = this
-			};
-			if (folderWindow.ShowDialog() != true)
-			{
-				Close();
-				return;
-			}
+		private async void MainWindow_OnContentRendered(object sender, EventArgs e)
+        {
+            // Pairing window
+            var pairingWindow = new FilePairingWindow
+            {
+                Owner = this
+            };
 
-			// Pairing
-			var pairingWindow = new FilePairingWindow
-			{
-				Owner = this,
-				MainPath = folderWindow.ViewModel.MainFolderName,
-				SubPath = folderWindow.ViewModel.SubFolderName
-			};
-			if (pairingWindow.ShowDialog() != true)
+            // Load if work file exists
+			if (File.Exists(FilePairingWindow.WorkFilename))
+            {
+				if (MessageBox.Show("作業中のデータがあります。読み込みますか？", "確認", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
+                {
+                    using (var stream = File.OpenRead(FilePairingWindow.WorkFilename))
+                    {
+                        pairingWindow.ViewModel = await JsonSerializer.DeserializeAsync<MainViewModel>(stream);
+					}
+                }
+            }
+
+            // Input Before/After directory
+            if (pairingWindow.ViewModel == null)
+            {
+                // Input folders
+                var folderWindow = new FolderSelectWindow
+                {
+                    Owner = this
+                };
+                if (folderWindow.ShowDialog() != true)
+                {
+                    Close();
+                    return;
+                }
+
+                pairingWindow.MainPath = folderWindow.ViewModel.MainFolderName;
+                pairingWindow.SubPath = folderWindow.ViewModel.SubFolderName;
+            }
+
+            // Run file pairing
+            if (pairingWindow.ShowDialog() != true)
 			{
 				Close();
 				return;
@@ -62,7 +90,12 @@ namespace FilePairing
 				return;
 			}
 
+            // Run rename
 			RenameFiles(filenameWindow.ViewModel.MainFilename, filenameWindow.ViewModel.SubFilename, pairingWindow.ViewModel);
+
+            // Delete working files
+            File.Delete(FilePairingWindow.WorkFilename);
+
 			Close();
 		}
 
@@ -89,8 +122,8 @@ namespace FilePairing
 			RenameFromTemp(mainTempFilenames, pairedTempBasename, mainBaseFilename);
             RenameFromTemp(subTempFilenames, pairedTempBasename, subBaseFilename);
 
-			RenameFromTemp(mainExclFilenames, exclTempBasename, $"除外_{mainBaseFilename}");
-            RenameFromTemp(subExclFilenames, exclTempBasename, $"除外_{subBaseFilename}");
+			RenameFromTemp(mainExclFilenames, exclTempBasename, $"{ExclFilePrefix}{mainBaseFilename}");
+            RenameFromTemp(subExclFilenames, exclTempBasename, $"{ExclFilePrefix}{subBaseFilename}");
 		}
 
 
@@ -141,7 +174,7 @@ namespace FilePairing
             result.Add(Rename(sourceFileSet.PrimaryFile, $@"{path}\{tempBaseName}-{count}{ext}"));
 
             var suffix = 0;
-            result.AddRange(sourceFileSet.SuffixFileCollection.Select(suffixFile => Rename(suffixFile, $@"{path}\{tempBaseName}-{count}_{++suffix}{ext}")));
+            result.AddRange(sourceFileSet.SuffixFileList.Select(suffixFile => Rename(suffixFile, $@"{path}\{tempBaseName}-{count}_{++suffix}{ext}")));
 
             return result.ToArray();
         }

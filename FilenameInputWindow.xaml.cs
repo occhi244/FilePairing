@@ -20,6 +20,9 @@ namespace FilePairing
 		}
 
 
+		/// <summary>
+		/// マッチングファイル
+		/// </summary>
         public ICollection<PairData> MatchingFileCollection
         {
             get;
@@ -95,7 +98,7 @@ namespace FilePairing
         {
             var body = Path.GetFileNameWithoutExtension(fullname);
 
-            const string pattern = @"(.+)(-\d+)(_\d+)?$";
+            var pattern = body.StartsWith(MainWindow.ExclFilePrefix) ? $@"^{MainWindow.ExclFilePrefix}(.+)(_\d+)$" : @"(.+)(-\d+)(_\d+)?$";
 
             var regex = new Regex(pattern, RegexOptions.IgnoreCase);
             var mm = regex.Match(body);
