@@ -90,8 +90,30 @@
 						<GridViewColumn.CellTemplate>
 							<DataTemplate>
                                 <Grid Width="{Binding ElementName=MatchingColumn, Path=Width, Converter={StaticResource ColumnWidthConverter}}">
-									<Image Source="{Binding MainFile, Converter={StaticResource ImageConverter}}"
-										   local:ControlAttachedProperty.Filename="{Binding MainFile}" />
+                                    <ContentControl DataContext="{Binding}" MouseDoubleClick="ImageControl_OnMouseDoubleClick">
+                                        <ContentControl.Resources>
+                                            <Style TargetType="MenuItem" x:Key="MoveEventStyle">
+                                                <EventSetter Event="Click" Handler="MoveFiles_OnClick" />
+                                            </Style>
+                                        </ContentControl.Resources>
+                                        <ContentControl.ContextMenu>
+                                            <ContextMenu>
+                                            <ContextMenu.Items>
+                                                <MenuItem DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type ContextMenu}}}"
+                                                          Header="ここに移動する"
+                                                          Style="{StaticResource MoveEventStyle}" />
+                                            </ContextMenu.Items>
+                                            </ContextMenu>
+                                        </ContentControl.ContextMenu>
+                                        <Image Source="{Binding MainFile, Converter={StaticResource ImageConverter}}"
+                                               local:ControlAttachedProperty.Filename="{Binding MainFile}" />
+                                    </ContentControl>
+                                    <StackPanel
+                                        Orientation="Horizontal"
+                                        Visibility="{Binding CheckedIconVisibility}"
+                                        VerticalAlignment="Top" HorizontalAlignment="Left" Margin="8">
+                                        <Image Source="Resources/checkbox-outline.png" Width="36" Height="36" />
+                                    </StackPanel>
                                     <StackPanel
 										Orientation="Horizontal"
                                         Visibility="{Binding MainFileSuffixIconVisibility}"
@@ -107,7 +129,7 @@
 						<GridViewColumn.CellTemplate>
 							<DataTemplate>
                                 <Grid Width="{Binding ElementName=MatchingColumn, Path=Width, Converter={StaticResource ColumnWidthConverter}}">
-									<Image Source="{Binding SubFile, Converter={StaticResource ImageConverter}}" />
+                                    <Image Source="{Binding SubFile, Converter={StaticResource ImageConverter}}" />
                                     <StackPanel
 										Orientation="Horizontal"
                                         Visibility="{Binding SubFileSuffixIconVisibility}"

@@ -63,6 +63,16 @@ namespace FilePairing.Properties {
         /// <summary>
         ///   型 System.Drawing.Bitmap のローカライズされたリソースを検索します。
         /// </summary>
+        internal static System.Drawing.Bitmap checkbox_outline {
+            get {
+                object obj = ResourceManager.GetObject("checkbox_outline", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   型 System.Drawing.Bitmap のローカライズされたリソースを検索します。
+        /// </summary>
         internal static System.Drawing.Bitmap layers_triple_36b {
             get {
                 object obj = ResourceManager.GetObject("layers_triple_36b", resourceCulture);

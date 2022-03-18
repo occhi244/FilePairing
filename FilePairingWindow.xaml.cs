@@ -496,7 +496,65 @@ namespace FilePairing
 			DialogResult = true;
 			Close();
 		}
+
+
+		/// <summary>
+		/// マス移動 対象ファイル設定
+		/// </summary>
+		/// <param name="sender"></param>
+		/// <param name="e"></param>
+        private void ImageControl_OnMouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            if (!(sender is ContentControl cc)) return;
+            if (!(cc.DataContext is PairData pairData)) return;
+
+            pairData.IsChecked = !pairData.IsChecked;
+        }
+
+
+		/// <summary>
+		/// ファイルをまとめて移動する
+		/// </summary>
+		/// <param name="sender"></param>
+		/// <param name="e"></param>
+        private void MoveFiles_OnClick(object sender, RoutedEventArgs e)
+        {
+			// Get target object
+            if (!(sender is MenuItem mi)) return;
+			if (!(mi.DataContext is PairData pairData)) return;
+
+			// Check placing target
+            if (pairData.IsChecked)
+            {
+                MessageBox.Show("自分自身へ移動することはできません。", "エラー", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+				return;
+            }
+
+			// Get moved items
+            var movedItems = ViewModel.MatchingViewFiles.Where(i => i.IsChecked).ToList();
+            if (movedItems.Count == 0)
+            {
+                MessageBox.Show("移動対象が選択されていません。", "エラー", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+                return;
+            }
+
+			// Remove moved items
+			movedItems.ForEach(i => ViewModel.MatchingViewFiles.Remove(i));
+
+			// Get the target position
+			var placedIndex = ViewModel.MatchingViewFiles.IndexOf(pairData);
+			if (placedIndex < 0) return;
+
+			// Move files
+			movedItems.ForEach(i =>
+            {
+                i.IsChecked = false;
+                ViewModel.MatchingViewFiles.Insert(++placedIndex, i);
+            });
+        }
     }
+
+
 
 
 	/// <summary>
@@ -841,6 +899,28 @@ namespace FilePairing
         /// サフィックス・アイコンを表示するかファイルがあるか
         /// </summary>
         public Visibility MainFileSuffixIconVisibility => MainFileSuffixFileCount > 0 ? Visibility.Visible : Visibility.Hidden;
+
+
+
+		/// <summary>
+		/// マス・移動モード
+		/// </summary>
+        private bool _isChecked = false;
+        public bool IsChecked
+        {
+            get => _isChecked;
+            set
+            {
+                _isChecked = value;
+				RaisePropertyChanged(nameof(CheckedIconVisibility));
+            }
+        }
+
+
+		/// <summary>
+		/// マス移動対象データの時に表示する
+		/// </summary>
+        public Visibility CheckedIconVisibility => IsChecked ? Visibility.Visible : Visibility.Hidden;
 
 
 

@@ -118,6 +118,18 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <assembly alias="System.Drawing" name="System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
+  <data name="checkbox_outline" type="System.Drawing.Bitmap, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+    <value>
+        iVBORw0KGgoAAAANSUhEUgAAACQAAAAkCAYAAADhAJiYAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6
+        JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAABMUlEQVRYR+2XUUoDMRRFZyVF3Eqp/rgc
+        ofhR8NOFdBf+9MNtqNRF2PZL72m5UMLUSexLRyEHDgwZ8nLnkcCkazQqciPv5TxYalK7iKX8qixrZEH6
+        vgI1nMlBHqQnvMinYKnp+qw1yKP0BJ6jKa7fAg0RHWgqrw+Pe0YNxIn9lB/SoUYLRJiNdK2VhFECuTOu
+        s5ajdeinMHDRQENhICwQhTkxp7iVx3vmXV7JlJBAE/kmt/KOgYR0A/d1xoQE4oR4jIXphsntjAkJRIde
+        pcd3kk6VdMaEBAK+mq/3O4KUdMaEBYK0UzanMyY0EKShSsJAeCBwqNIwUCUQsF9y9kxKtUC/5f8HOv7J
+        f5Z9d6tzpKbrZ/3kczXxhNpmXYPgT10UDekXsu9udY7UzO5Mo1FG130DMHRZ79lz0IQAAAAASUVORK5C
+        YII=
+</value>
+  </data>
   <data name="layers_triple_36b" type="System.Drawing.Bitmap, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
     <value>
         iVBORw0KGgoAAAANSUhEUgAAACQAAAAkCAYAAADhAJiYAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6
